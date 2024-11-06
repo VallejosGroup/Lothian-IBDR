@@ -110,6 +110,20 @@ myDF.fc <- myDF.fc %>%
          prob_order3 = prob8, prob_order4 = prob3,
          prob_order5 = prob6, prob_order6 = prob2,
          prob_order7 = prob1, prob_order8 = prob4)
+
+myDF.fc <- myDF.fc %>%
+  mutate(class_order2 = 
+           plyr::mapvalues(class_order, 
+                           from = paste0("FC", 1:8),
+                           to = c("FC1-2", 
+                                  "FC1-2", 
+                                  "FC3-6", 
+                                  "FC3-6",
+                                  "FC3-6",
+                                  "FC3-6",
+                                  "FC7",
+                                  "FC8"))) %>%
+  mutate(class_order2 = as.factor(class_order2))
 ```
 
 ### Uncertainty cluster assignment probabilities 
@@ -224,13 +238,13 @@ diagnosis: age, sex and IBD type.
 #| fig-width: 12
 #| fig-height: 12
 p_diagnosis_all <- myDF.fc %>%
-  plotCat("diagnosis", class = "class_order") 
+  plotCat("diagnosis", class = "class_order2") 
 
 p_sex_all <- myDF.fc %>%
-  plotCat("sex", class = "class_order")
+  plotCat("sex", class = "class_order2")
 
 p_age_all <- myDF.fc %>%
-  ggplot(aes(x = class_order, y = age)) +
+  ggplot(aes(x = class_order2, y = age)) +
   geom_violin(fill = "#5DB7DE", color = "#434371") +
   geom_boxplot(width=0.1, color="black", alpha=0.2) +
   theme_minimal() +
@@ -238,8 +252,8 @@ p_age_all <- myDF.fc %>%
   ylab("Age at diagnosis")
 
 p_mlr_all <- myDF.fc %>%
-  mutate(class_order = relevel(class_order, ref = "FC4")) %>%
-  mlrPlot(var = c("diagnosis", "age", "sex"), class = "class_order") 
+  mutate(class_order2 = relevel(class_order2, ref = "FC3-6")) %>%
+  mlrPlot(var = c("diagnosis", "age", "sex"), class = "class_order2") 
 ```
 
 
@@ -288,15 +302,15 @@ Restricted to those with posterior probability > 0.5
 #| fig-height: 12
 p_diagnosis <- myDF.fc %>%
   filter(probmax > 0.5) %>%
-  plotCat("diagnosis", class = "class_order") 
+  plotCat("diagnosis", class = "class_order2") 
 
 p_sex <- myDF.fc %>%
   filter(probmax > 0.5) %>%
-  plotCat("sex", class = "class_order")
+  plotCat("sex", class = "class_order2")
 
 p_age <- myDF.fc %>%
   filter(probmax > 0.5) %>%
-  ggplot(aes(x = class_order, y = age)) +
+  ggplot(aes(x = class_order2, y = age)) +
   geom_violin(fill = "#5DB7DE", color = "#434371") +
   geom_boxplot(width=0.1, color="black", alpha=0.2) +
   theme_minimal() +
@@ -305,8 +319,8 @@ p_age <- myDF.fc %>%
 
 p_mlr <- myDF.fc %>%
   filter(probmax > 0.5) %>%
-  mutate(class_order = relevel(class_order, ref = "FC4")) %>%
-  mlrPlot(var = c("diagnosis", "age", "sex"), class = "class_order") # , "baseline_fc"
+  mutate(class_order2 = relevel(class_order2, ref = "FC3-6")) %>%
+  mlrPlot(var = c("diagnosis", "age", "sex"), class = "class_order2") # , "baseline_fc"
 
 wrap_elements(p_diagnosis_all) +
   wrap_elements(p_mlr_all$plot_both$`diagnosisUlcerative Colitis` + 
@@ -459,12 +473,12 @@ Here is the code to explore the associations:
 p_sex_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
-  plotCat("sex", class = "class_order")
+  plotCat("sex", class = "class_order2")
 
 p_age_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
-  ggplot(aes(x = class_order, y = age)) +
+  ggplot(aes(x = class_order2, y = age)) +
   geom_violin(fill = "#5DB7DE", color = "#434371") +
   geom_boxplot(width=0.1, color="black", alpha=0.2) +
   theme_minimal() +
@@ -475,39 +489,39 @@ p_smoke_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
   mutate(Smoke = ifelse(!is.na(Smoke), Smoke, "Missing")) %>%
-  plotCat("Smoke", class = "class_order")
+  plotCat("Smoke", class = "class_order2")
 
 p_location_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
   mutate(Location = ifelse(!is.na(Location), Location, "Missing")) %>%
-  plotCat("Location", class = "class_order")
+  plotCat("Location", class = "class_order2")
 
 p_behaviour_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
   mutate(Behaviour = ifelse(!is.na(Behaviour_merged), Behaviour_merged, "Missing")) %>%
-  plotCat("Behaviour", class = "class_order")
+  plotCat("Behaviour", class = "class_order2")
 
 p_L4_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
   mutate(L4 = ifelse(!is.na(L4), L4, "Missing")) %>%
-  plotCat("L4", class = "class_order")
+  plotCat("L4", class = "class_order2")
 
 p_perianal_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
   mutate(Perianal = ifelse(!is.na(Perianal), Perianal, "Missing")) %>%
-  plotCat("Perianal", class = "class_order")
+  plotCat("Perianal", class = "class_order2")
 
 p_mlr_cd <- myDF.fc %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
-  mutate(class_order = relevel(class_order, ref = "FC4")) %>%
+  mutate(class_order2 = relevel(class_order2, ref = "FC3-6")) %>%
   mlrPlot(var = c("age", "sex", 
                   "Smoke", "Location", "L4", "Behaviour_merged", "Perianal"), 
-          class = "class_order")
+          class = "class_order2")
 ```
 
 ```{R}
@@ -685,12 +699,12 @@ will be excluded hereafter.
 p_sex_uc <- myDF.fc %>%
   filter(diagnosis == "Ulcerative Colitis") %>%
   filter(missingN_uc == 0) %>%
-  plotCat("sex", class = "class_order")
+  plotCat("sex", class = "class_order2")
 
 p_age_uc <- myDF.fc %>%
   filter(diagnosis == "Ulcerative Colitis") %>%
   filter(missingN_uc == 0) %>%
-  ggplot(aes(x = class_order, y = age)) +
+  ggplot(aes(x = class_order2, y = age)) +
   geom_violin(fill = "#5DB7DE", color = "#434371") +
   geom_boxplot(width=0.1, color="black", alpha=0.2) +
   theme_minimal() +
@@ -701,13 +715,13 @@ p_smoke_uc <- myDF.fc %>%
   filter(diagnosis == "Ulcerative Colitis") %>%
   filter(missingN_uc == 0) %>%
   mutate(Smoke = ifelse(!is.na(Smoke), Smoke, "Missing")) %>%
-  plotCat("Smoke", class = "class_order")
+  plotCat("Smoke", class = "class_order2")
 
 p_extent_uc <- myDF.fc %>%
   filter(diagnosis == "Ulcerative Colitis") %>%
   filter(missingN_uc == 0) %>%
   mutate(Extent = ifelse(!is.na(Extent), Extent, "Missing")) %>%
-  plotCat("Extent", class = "class_order")
+  plotCat("Extent", class = "class_order2")
 
 p_mlr_uc <- myDF.fc %>%
   filter(diagnosis == "Ulcerative Colitis") %>%
