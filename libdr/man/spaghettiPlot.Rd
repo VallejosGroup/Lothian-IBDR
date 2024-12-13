@@ -25,6 +25,7 @@ spaghettiPlot(
   l = 1,
   color = NULL,
   clusters = FALSE,
+  external = NULL,
   var.time = "calpro_time"
 )
 }
@@ -86,6 +87,11 @@ will be grey.}
 \item{clusters}{Logical. Are clusters given via a "class" column in
 \code{data}? Otherwise clusters are found from the \code{hlme} object in
 models[[G]]. Defaults to FALSE.}
+
+\item{external}{Optional data frame providing mean cluster
+estimates from \code{\link{predictY}{lcmm}}. Intended to be used with
+outputs from models applied to an external cohort. Columns should be
+"time", "Ypred", "CI1", and "CI2".}
 
 \item{var.time}{Character. Name of variable used for time. Either
 "calpro_time" or "crp_time" Also used to determine if the LCMM has been

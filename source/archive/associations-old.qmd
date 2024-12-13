@@ -60,27 +60,6 @@ model.fc <- readRDS(paste0(prefix, "/cache/fcal/ncs/fcal-8.RDS"))
 crp <- readRDS(paste0(prefix, "processed/crp.RDS"))
 crp.median <- readRDS(paste0(prefix, "processed/median-crp.RDS"))
 model.crp <- readRDS(paste0(prefix, "cache/crp-ma/crp-8.RDS"))
-
-
-dk <- read.csv(paste0(prefix,
-                      "Denmark/2024-12-13/Fcal_association_tests_merge4_6.csv"),
-               sep = ";")
-dk <- dk %>% mutate(Var1 = plyr::mapvalues(Var1,
-                                     from = paste0("FC", seq(1, 6)),
-                                     to = c("FC1",
-                                            "FC2",
-                                            "FC3",
-                                            "FC4-6",
-                                            "FC7",
-                                            "FC8")),
-              Var2 = plyr::mapvalues(Var2,
-                                     from = c("diag_age",
-                                              "final_diagUC",
-                                              "sexM"),
-                                     to =  c("age",
-                                             "diagnosisUlcerative Colitis",
-                                             "sexMale")))
-              
 ```
 
 This page explores potential associations between information available at
@@ -133,47 +112,6 @@ myDF.fc <- myDF.fc %>%
          prob_order7 = prob1, prob_order8 = prob4)
 ```
 
-```{R}
-myDF.fc <- myDF.fc %>%
-  mutate(class_order_original = class_order,
-         prob_order_original_1 = prob_order1,
-         prob_order_original_2 = prob_order2,
-         prob_order_original_3 = prob_order3,
-         prob_order_original_4 = prob_order4,
-         prob_order_original_5 = prob_order5,
-         prob_order_original_6 = prob_order6, 
-         prob_order_original_7 = prob_order7,
-         prob_order_original_8 = prob_order8,
-         probmax_original = pmax(prob_order1,
-                                 prob_order2,
-                                 prob_order3,
-                                 prob_order4,
-                                 prob_order5,
-                                 prob_order6,
-                                 prob_order7,
-                                 prob_order8),
-    class_order = plyr::mapvalues(class_order,
-                                       from = c("FC5", "FC6", "FC7", "FC8"),
-                                       to = c("FC4", "FC4", "FC5", "FC6")),
-         prob_order4 = prob_order4 + prob_order5 + prob_order6,
-         prob_order5 = prob_order7,
-         prob_order6 = prob_order8)%>%
-  select(-prob_order7, -prob_order8)  %>%
-  mutate(probmax = pmax(prob_order1,
-                        prob_order2,
-                        prob_order3,
-                        prob_order4,
-                        prob_order5,
-                        prob_order6))
-
-
-newlabs <- c("FC1", "FC2", "FC3", "FC4-6", "FC7", "FC8")
-
-myDF.fc$class_order = factor(myDF.fc$class_order,
-                             levels = paste0("FC", seq(1,6)),
-                             labels = newlabs)
-```
-
 ### Uncertainty cluster assignment probabilities 
 
 First, we calculate the proportion of individuals assigned to each cluster
@@ -181,10 +119,10 @@ with probability above 0.5.
 
 ```{r}
 p1 <- myDF.fc %>% 
-  group_by(class_order_original) %>%
-  summarise(prop50 = 100 * mean(probmax_original > 0.5),
-            prop75 = 100 * mean(probmax_original > 0.75)) %>%
-  ggplot(aes(x = class_order_original, y = prop50)) +
+  group_by(class_order) %>%
+  summarise(prop50 = 100*mean(probmax > 0.5),
+            prop75 = 100*mean(probmax > 0.75)) %>%
+  ggplot(aes(x = class_order, y = prop50)) +
   ylim(c(0,100)) +
   xlab("Assigned cluster") +
   ylab("% assigned with prob > 0.5") +
@@ -199,10 +137,10 @@ Next, we calculate average posterior probabilities of cluster assignment.
 
 ```{r}
 myDF.fc_means <- myDF.fc %>% 
-  group_by(class_order_original, followup_cut) %>%
-  summarise(across(starts_with("prob_order_original"), function(x) mean(x, na.rm = TRUE)),
+  group_by(class_order, followup_cut) %>%
+  summarise(across(starts_with("prob_order"), function(x) mean(x, na.rm = TRUE)),
             .groups = "drop") %>%
-  pivot_longer(cols = starts_with("prob_order_original"), names_to = "prob_order_original")
+  pivot_longer(cols = starts_with("prob_order"), names_to = "prob_order")
 ```
 
 @fig-fc-prob-fup shows how cluster assignment probabilities change as follow-up
@@ -228,22 +166,22 @@ This is not unexpected, as FC3 and FC6 share similar patterns within the first
 #| fig-width: 11
 #| fig-height: 8
 
+
 # Assign level order otherwise alphanumerical order used 
 # and add sample sizes to labels
 myDF.fc_means <- myDF.fc_means %>%
-  mutate(prob_order_original = factor(prob_order_original,
-                                      levels = paste0("prob_order_original_",
-                                                      1:8),
-                                      labels = paste0("FC", seq(1, 8))),
-         class_order_original = factor(class_order_original,
+  mutate(prob_order = factor(prob_order,
+                             levels = c(paste0("prob_order", 1:8)),
+                             labels = c(paste0("FC", 1:8))),
+         class_order = factor(class_order,
                               levels = paste0("FC", 1:8),
                               labels = paste0("Assigned to FC", 1:8, "\n n = ",
-                                              as.vector(table(myDF.fc$class_order_original)))))
+                                              as.vector(table(myDF.fc$class_order)))))
 
 fc_fup <- myDF.fc_means %>%
-  ggplot(aes(fill = prob_order_original, y = value, x = followup_cut)) +
+  ggplot(aes(fill = prob_order, y = value, x = followup_cut)) +
   geom_bar(position = "fill", stat = "identity") +
-  facet_wrap(.~class_order_original, ncol = 4) + 
+  facet_wrap(.~class_order, ncol = 4) + 
   theme_minimal() +
   theme(legend.title = element_text(hjust = 0.5),
         strip.background = element_rect(color = "lightgray",
@@ -308,21 +246,12 @@ p_mlr_all <- myDF.fc %>%
 
 
 ```{R}
-p_mlr_all <- myDF.fc %>%
-  mutate(class_order = relevel(class_order, ref = "FC1")) %>%
-  mlrPlot(var = c("diagnosis", "age", "sex"),
-          class = "class_order",
-          extern = dk) 
-```
-
-
-```{R}
 #| column: page
 #| fig-width: 15
 #| fig-height: 12
 p <- wrap_elements(p_diagnosis_all) +
-  wrap_elements(p_mlr_all$plot_everything$`diagnosisUlcerative Colitis` + 
-                  p_mlr_all$plot_everything$`diagnosisIBDU` +
+  wrap_elements(p_mlr_all$plot_both$`diagnosisUlcerative Colitis` + 
+                  p_mlr_all$plot_both$`diagnosisIBDU` +
                   plot_layout(guides = "collect") &
                   theme(legend.position = "bottom")) +
   plot_annotation(tag_levels = "A") + 
@@ -406,6 +335,31 @@ p_mlr <- myDF.fc %>%
 #  (wrap_elements(p_sex_all) + p_mlr_all$plot_everything$sexMale) +
 #    plot_annotation(tag_levels = "A", title = "All subjects")
 
+```
+
+Some statistics to be used in the text:
+
+```{r}
+#myDF.fc %>%
+#  mutate(class_aux = ifelse(class_order %in% c("FC6"), class_order, "Other")) %>%
+#  group_by(class_aux, diagnosis) %>%
+#  summarise(count = n()) %>%
+#  mutate(percentage = (count / sum(count) * 100)) %>%
+#  knitr::kable()
+
+myDF.fc %>%
+  mutate(class_aux = ifelse(class_order %in% c("FC1", "FC8"), class_order, "Other")) %>%
+  group_by(class_aux, diagnosis) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = (count / sum(count) * 100)) %>%
+  knitr::kable()
+
+myDF.fc %>%
+  mutate(class_aux = ifelse(class_order %in% c("FC7"), class_order, "Other")) %>%
+  group_by(class_aux, diagnosis) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = (count / sum(count) * 100)) %>%
+  knitr::kable()
 ```
 
 #### Crohn's disease only
@@ -926,9 +880,9 @@ p_AT <- myDF.fc %>%
 
 p_AT_mlr <- myDF.fc %>%
   mutate(AT_7Y = factor(AT_7Y)) %>%
-  mutate(class_order_original = relevel(class_order_original, ref = "FC1")) %>%
+  mutate(class_order = relevel(class_order, ref = "FC1")) %>%
   mlrPlot(var = c("age", "sex", "AT_7Y"),
-          class = "class_order_original")
+          class = "class_order")
 
 wrap_elements(p_AT) + p_AT_mlr$plot_both$AT 
 ```
@@ -939,7 +893,7 @@ Some statistics to be used in the text:
 table(myDF.fc$AT_7Y)
 
 myDF.fc %>%
-  mutate(class_aux = ifelse(class_order %in% c("FC2"), class_order_original, "Other")) %>%
+  mutate(class_aux = ifelse(class_order %in% c("FC2"), class_order, "Other")) %>%
   group_by(class_aux, AT_7Y) %>%
   summarise(count = n()) %>%
   mutate(percentage = (count / sum(count) * 100)) 
@@ -967,12 +921,12 @@ For this purpose, we exclude IBDU due to its small size.
 p_AT_cd <- myDF.fc %>% 
   subset(diagnosis == "Crohn's Disease") %>%
   mutate(AT_7Y = factor(AT_7Y)) %>%
-  plotCat("AT_7Y", class = "class_order_original")
+  plotCat("AT_7Y", class = "class_order")
   
 p_AT_uc <- myDF.fc %>% 
   subset(diagnosis == "Ulcerative Colitis") %>%
   mutate(AT_7Y = factor(AT_7Y)) %>%
-  plotCat("AT_7Y", class = "class_order_original")
+  plotCat("AT_7Y", class = "class_order")
   
 
 wrap_elements(p_AT) + ggtitle("CD + UC + IBDU") + 
@@ -993,15 +947,15 @@ myDF.fc %>%
 
 p_AT_1Y <- myDF.fc %>% 
   mutate(AT_1Y = factor(AT_1Y)) %>%
-  plotCat("AT_1Y", class = "class_order_original")
+  plotCat("AT_1Y", class = "class_order")
 
 p_AT_1Y_cd <- myDF.fc %>% 
   subset(diagnosis == "Crohn's Disease") %>%
-  plotCat("AT_1Y", class = "class_order_original")
+  plotCat("AT_1Y", class = "class_order")
 
 p_AT_1Y_cd <- myDF.fc %>% 
   subset(diagnosis == "Ulcerative Colitis") %>%
-  plotCat("AT_1Y", class = "class_order_original")
+  plotCat("AT_1Y", class = "class_order")
 ```
 
 We also generate a censored version for `AT_1Y` where lack of AT is treated as
@@ -1041,15 +995,15 @@ km.df <- data.frame(time = numeric(),
                     class = character(),
                     diag = character())
 
-for (g in 1:6) {
+for (g in 1:8) {
 
   # Calculate cumulative patterns
   temp.cd <- myDF.fc %>%
-    filter(class_order_original == paste0("FC", g)) %>%
+    filter(class_order == paste0("FC", g)) %>%
     filter(diagnosis == "Crohn's Disease")
   
    temp.uc <- myDF.fc %>%
-    filter(class_order_original == paste0("FC", g)) %>%
+    filter(class_order == paste0("FC", g)) %>%
     filter(diagnosis == "Ulcerative Colitis")
   
   
@@ -1079,7 +1033,7 @@ for (g in 1:6) {
                             diag = "Ulcerative colitis"))
   
   temp.all <- myDF.fc %>%
-    filter(class_order_original == paste0("FC", g)) 
+    filter(class_order == paste0("FC", g)) 
   km <- survfit(Surv(AT_line_1_cens, AT_7Y) ~ 1, data = temp.all) 
   km.df <- rbind(km.df,
                  data.frame(time = km$time,
@@ -1307,7 +1261,7 @@ p_age_all <- myDF.crp %>%
   ylab("Age at diagnosis")
 
 p_mlr_all <- myDF.crp %>%
-  mutate(class_order = relevel(class_order, ref = "CRP1")) %>%
+  mutate(class_order = relevel(class_order, ref = "CRP8")) %>%
   mlrPlot(var = c("diagnosis", "age", "sex"), class = "class_order") 
 ```
 
@@ -1380,7 +1334,7 @@ p_age <- myDF.crp %>%
 
 #p_mlr <- myDF.crp %>%
 #  filter(probmax > 0.5) %>%
-#  mutate(class_order = relevel(class_order, ref = "CRP1")) %>%
+#  mutate(class_order = relevel(class_order, ref = "CRP8")) %>%
 #  mlrPlot(var = c("diagnosis", "age", "sex"), class = "class_order") # , "baseline_fc"
 
 #wrap_elements(p_diagnosis_all) +
@@ -1567,7 +1521,7 @@ p_perianal_cd <- myDF.crp %>%
 p_mlr_cd <- myDF.crp %>%
   filter(diagnosis == "Crohn's Disease") %>%
   filter(missingN_cd == 0) %>%
-  mutate(class_order = relevel(class_order, ref = "CRP1")) %>%
+  mutate(class_order = relevel(class_order, ref = "CRP8")) %>%
   mlrPlot(var = c("age", "sex", "Smoke", "Location", "L4", "Behaviour_merged"), 
           class = "class_order")
 ```
@@ -1750,7 +1704,7 @@ p_extent_uc <- myDF.crp %>%
 p_mlr_uc <- myDF.crp %>%
   filter(diagnosis == "Ulcerative Colitis") %>%
   filter(missingN_uc == 0) %>%
-  mutate(class_order = relevel(class_order, ref = "CRP1")) %>%
+  mutate(class_order = relevel(class_order, ref = "CRP8")) %>%
   mlrPlot(var = c("age", "sex", "Smoke", "Extent"),
           class = "class_order")
 ```
@@ -1871,7 +1825,7 @@ p_AT <- myDF.crp %>%
 
 p_AT_mlr <- myDF.crp %>%
   mutate(AT_7Y = factor(AT_7Y)) %>%
-  mutate(class_order = relevel(class_order, ref = "CRP1")) %>%
+  mutate(class_order = relevel(class_order, ref = "CRP8")) %>%
   mlrPlot(var = c("age", "sex", "AT_7Y"),
           class = "class_order")
 

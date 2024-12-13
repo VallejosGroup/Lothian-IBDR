@@ -37,6 +37,10 @@
 #' @param clusters Logical. Are clusters given via a "class" column in
 #'   \code{data}? Otherwise clusters are found from the \code{hlme} object in
 #'   models[[G]]. Defaults to FALSE.
+#' @param external Optional data frame providing mean cluster
+#'   estimates from \code{\link{predictY}{lcmm}}. Intended to be used with
+#'   outputs from models applied to an external cohort. Columns should be
+#'   "time", "Ypred", "CI1", and "CI2".
 #' @param var.time Character. Name of variable used for time. Either
 #'   "calpro_time" or "crp_time" Also used to determine if the LCMM has been
 #'   fitted for FCAL or CRP.
@@ -61,12 +65,19 @@ spaghettiPlot <- function(data,
                           l = 1,
                           color = NULL,
                           clusters = FALSE,
+                          external = NULL,
                           var.time = "calpro_time") {
   data <- cutPostProb(data, models, G, pprob.cutoff)
 
   if (!is.null(ylim)) {
     if (!(ylim %in% c("data", "pred", "conf"))) {
       stop("`ylim` should be either 'data', 'pred', or 'conf'")
+    }
+  }
+
+  if (!is.null(external)) {
+    if (!is.data.frame(external)) {
+      stop("`external` should be NULL or a data frame")
     }
   }
 
@@ -89,6 +100,7 @@ spaghettiPlot <- function(data,
       l = l,
       color = color,
       clusters = clusters,
+      external = external,
       var.time = var.time
     )
   }
@@ -112,6 +124,7 @@ spaghettiPlot <- function(data,
       l = l,
       color = color,
       clusters = clusters,
+      external = external,
       var.time = var.time
     )
   }
@@ -154,6 +167,7 @@ spaghetti_plot_sub <- function(data,
                                l = l,
                                color,
                                clusters,
+                               external,
                                var.time) {
   # Global vars
   layout <- ids <- .data <- calpro_result <- crp_result <- time <- NULL
@@ -164,7 +178,6 @@ spaghetti_plot_sub <- function(data,
   # Set up the page
   # creates a grid of plots
   layout <- pushViewportMod(G = G, column = column)
-
 
   lcmm_uit <- predictLcmm(
     models = models,
@@ -213,6 +226,7 @@ spaghetti_plot_sub <- function(data,
             )
           ) + geom_line(aes(group = ids), alpha = 0.2)
         }
+
 
         p[[g]] <- p[[g]] +
           xlab("Time (years)") +
@@ -265,7 +279,7 @@ spaghetti_plot_sub <- function(data,
             )])
           ),
           linewidth = 1.5,
-          col = "red"
+          col = "#005EB8"
         ) +
         geom_line(
           data = lcmm_uit,
@@ -276,7 +290,7 @@ spaghetti_plot_sub <- function(data,
               mapping[g]
             )])
           ),
-          col = "red",
+          col = "#005EB8",
           lty = 2
         ) +
         geom_line(
@@ -288,7 +302,7 @@ spaghetti_plot_sub <- function(data,
               mapping[g]
             )])
           ),
-          col = "red",
+          col = "#005EB8",
           lty = 2
         )
       if (sizes) {
@@ -316,15 +330,34 @@ spaghetti_plot_sub <- function(data,
           ) + geom_line(aes(group = ids), alpha = 0.2)
         }
 
+
         p[[g]] <- p[[g]] +
           geom_hline(
             yintercept = log(250),
-            color = "#007add",
+            color = "#FFBF00",
             lty = 3,
             linewidth = 1.5
           ) +
           xlab("Time (years)") +
           ylab("Log (FC (\u03BCg/g))")
+
+        if (!is.null(external)) {
+          external.sub <- subset(external, cluster == g)
+          p[[g]] <- p[[g]] +
+            geom_line(aes(x = time, y = Ypred),
+                      color = "#C8102E",
+                      linewidth = 1.5,
+                      data = external.sub) +
+            geom_line(aes(x = time, y = CI1),
+                      color = "#C8102E",
+                      lty = 2,
+                      data = external.sub) +
+            geom_line(aes(x = time, y = CI2),
+                      color ="#C8102E",
+                      lty = 2,
+                      data = external.sub)
+        }
+
       } else if (var.time == "crp_time") {
         if (is.null(color)) {
           p[[g]] <- ggplot(
@@ -348,12 +381,30 @@ spaghetti_plot_sub <- function(data,
         p[[g]] <- p[[g]] +
           geom_hline(
             yintercept = log(5),
-            color = "#007add",
+            color = "#FFBF00",
             lty = 3,
             linewidth = 1.5
           ) +
           xlab("Time (years)") +
           ylab("Log (CRP (\u03BCg/mL))")
+
+        if (!is.null(external)) {
+          external.sub <- subset(external, cluster == g)
+          p[[g]] <- p[[g]] +
+            geom_line(aes(x = time, y = Ypred),
+                      color = "#C8102E",
+                      linewidth = 1.5,
+                      data = external.sub) +
+            geom_line(aes(x = time, y = CI1),
+                      color = "#C8102E",
+                      lty = 2,
+                      data = external.sub) +
+            geom_line(aes(x = time, y = CI2),
+                      color ="#C8102E",
+                      lty = 2,
+                      data = external.sub)
+        }
+
       }
 
       if (knots) {
@@ -388,7 +439,7 @@ spaghetti_plot_sub <- function(data,
               )]
             ),
             linewidth = 1.5,
-            col = "red"
+            col = "#005EB8"
           ) +
           geom_line(
             data = lcmm_uit,
@@ -399,7 +450,7 @@ spaghetti_plot_sub <- function(data,
                 mapping[g]
               )]
             ),
-            col = "red",
+            col = "#005EB8",
             lty = 2
           ) +
           geom_line(
@@ -411,7 +462,7 @@ spaghetti_plot_sub <- function(data,
                 mapping[g]
               )]
             ),
-            col = "red",
+            col = "#005EB8",
             lty = 2
           )
       } else {
@@ -426,7 +477,7 @@ spaghetti_plot_sub <- function(data,
               )]
             ),
             linewidth = 1.5,
-            col = "red"
+            col = "#005EB8"
           ) +
           geom_line(
             data = lcmm_uit,
@@ -437,7 +488,7 @@ spaghetti_plot_sub <- function(data,
                 mapping[g]
               )]
             ),
-            col = "red",
+            col = "#005EB8",
             lty = 2
           ) +
           geom_line(
@@ -449,7 +500,7 @@ spaghetti_plot_sub <- function(data,
                 mapping[g]
               )]
             ),
-            col = "red",
+            col = "#005EB8",
             lty = 2
           )
       }
@@ -466,7 +517,6 @@ spaghetti_plot_sub <- function(data,
     )
 
     p[[g]] <- p[[g]] + theme(legend.position = "none")
-
     printLcmm(g = g, p = p, matchidx = matchidx, multi = multi, save = save)
   }
 }
@@ -678,3 +728,9 @@ labels$list[[9]] <- c("A", "C", "E", "G", "I", "B", "D", "F", "H")
 labels$list[[10]] <- c("A", "C", "E", "G", "I", "B", "D", "F", "H", "J")
 labels$list[[11]] <- c("A", "C", "E", "G", "I", "K", "B", "D", "F", "H", "J")
 labels$list[[12]] <- c("A", "C", "E", "G", "I", "K", "B", "D", "F", "H", "J", "L")
+
+
+
+ScotBlue <- "#005EB8"
+DanishRed <- "#C8102E"
+

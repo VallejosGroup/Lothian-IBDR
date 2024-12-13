@@ -59,6 +59,9 @@ library(qqplotr)
 
 dict <- readRDS(paste0(prefix, "processed/dict.RDS"))
 fcal <- readRDS(paste0(prefix, "processed/fcal.RDS"))
+
+dk.fcal <- read.csv(paste0(prefix, "Denmark/2024-11-29/Fcal_8_models.csv"),
+                    sep = ";")
 ```
 
 This page describes how the latent class mixed models (LCMMs) were fitted to 
@@ -1064,11 +1067,80 @@ spaghettiPlot(new.fc,
 )
 ```
 
+With Danish predictions
+
+```{R}
+dk.fcal <- dk.fcal %>%
+  mutate(cluster = str_replace_all(cluster, "Ypred_class", ""))
+```
+
+```{R}
+dk.fcal$cluster <- plyr::mapvalues(dk.fcal$cluster,
+                                   from = seq(1, 8),
+                                   to = c(3, 1, 7, 5, 8, 2, 4, 6))
+```
+
+```{R}
+cairo_pdf(paste0("plots/spaghetti/fcal-scot-dk.pdf"),
+  width = 10,
+  height = 16
+)
+grid::grid.newpage()
+spaghettiPlot(new.fc,
+  models.fcal,
+  G = 8,
+  log = TRUE,
+  tmax = 7,
+  sizes = TRUE,
+  knots = FALSE,
+  var.time = "calpro_time",
+  clusters = TRUE,
+  mapping = rank.full$Original,
+  external = dk.fcal
+)
+invisible(dev.off())
+
+png(paste0("plots/spaghetti/fcal-scot-dk.png"),
+  width = 10,
+  height = 16,
+  units = "in",
+  res = 300
+)
+grid::grid.newpage()
+spaghettiPlot(new.fc,
+  models.fcal,
+  G = 8,
+  log = TRUE,
+  tmax = 7,
+  sizes = TRUE,
+  knots = FALSE,
+  var.time = "calpro_time",
+  clusters = TRUE,
+  mapping = rank.full$Original,
+  external = dk.fcal
+)
+invisible(dev.off())
+
+grid::grid.newpage()
+spaghettiPlot(new.fc,
+  models.fcal,
+  G = 8,
+  log = TRUE,
+  tmax = 7,
+  sizes = TRUE,
+  knots = FALSE,
+  var.time = "calpro_time",
+  clusters = TRUE,
+  mapping = rank.full$Original,
+  external = dk.fcal
+)
+```
+
 ```{R}
 for (G in (9:10)) {
   new.fc <- data.frame(
     ids = numeric(),
-    calpro_result = numeric(),
+    calpro_result = numeric(), 
     calpro_time = numeric(),
     class = numeric()
   )

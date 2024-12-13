@@ -1,7 +1,7 @@
 Package: libdr
 Type: Package
 Title: Support Functions used by the LIBDR LCMM Analysis
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: c(
     person("Nathan", "Constantine-Cooke", , "nathan.constantine-cooke@ed.ac.uk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4437-8713")),

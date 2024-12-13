@@ -4,7 +4,14 @@
 \alias{mlrPlot}
 \title{Forest plot of multinomial logistic regression model}
 \usage{
-mlrPlot(dat, var, class = "class_combined", prob = "probmax", minprob = 0.5)
+mlrPlot(
+  dat,
+  var,
+  class = "class_combined",
+  prob = "probmax",
+  minprob = 0.5,
+  extern = NULL
+)
 }
 \arguments{
 \item{dat}{Data frame holding covariate and cluster assignment data.}
@@ -23,6 +30,10 @@ manually specified.}
 \item{minprob}{Numeric. The minimum posterior probability for cluster
 membership required for a subject to be included in the analysis. Assumed
 to be 0.5 if not manually specified}
+
+\item{extern}{Optional data frame containing multinomial logistic
+regression results obtained from an external dataset. If not given then it
+is assumed that no external data is required.}
 }
 \description{
 Forest plot of multinomial logistic regression model

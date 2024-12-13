@@ -61,6 +61,9 @@ library(qqplotr)
 dict <- readRDS(paste0(prefix, "processed/dict.RDS"))
 crp_median <- readRDS(paste0(prefix, "processed/median-crp.RDS"))
 crp <- readRDS(paste0(prefix, "processed/crp.RDS"))
+
+dk.crp <- read.csv(paste0(prefix, "Denmark/2024-11-29/crp_8_models.csv"),
+                    sep = ";")
 ```
 
 ## Model selection
@@ -537,7 +540,7 @@ for (clust in 1:8) {
         crp.ma[i + 1, j + 1] <- median(sub.obs$crp_result)
       }
     }
-  }
+  } 
 
   rownames(crp.ma) <- 1:iters
   crp.ma <- reshape2::melt(t(crp.ma),
@@ -633,6 +636,79 @@ spaghettiPlot(new.crp,
   var.time = "crp_time",
   clusters = TRUE,
   ylim = "data",
+  mapping = rank.full$Original
+)
+```
+
+With Danish predictions
+
+```{R}
+dk.crp <- dk.crp %>%
+  mutate(cluster = str_replace_all(cluster, "Ypred_class", "")) %>%
+  filter(time <= 4.25)
+```
+
+```{R}
+dk.crp$cluster <- plyr::mapvalues(dk.crp$cluster,
+                                   from = seq(1, 8),
+                                   to = c(1, 2, 8, 3, 5, 7, 6, 4))
+```
+
+```{R}
+cairo_pdf(paste0("plots/spaghetti/crp-scot-dk.pdf"),
+  width = 10,
+  height = 16
+)
+grid::grid.newpage()
+spaghettiPlot(new.crp,
+  models.crp.ma,
+  G = 8,
+  log = TRUE,
+  tmax = 6.25,
+  sizes = TRUE,
+  knots = FALSE,
+  var.time = "crp_time",
+  clusters = TRUE,
+  ylim = "data",
+  external = dk.crp,
+  mapping = rank.full$Original
+)
+invisible(dev.off())
+
+png(paste0("plots/spaghetti/crp-scot-dk.png"),
+  width = 10,
+  height = 16,
+  units = "in",
+  res = 300
+)
+grid::grid.newpage()
+spaghettiPlot(new.crp,
+  models.crp.ma,
+  G = 8,
+  log = TRUE,
+  tmax = 6.25,
+  sizes = TRUE,
+  knots = FALSE,
+  var.time = "crp_time",
+  clusters = TRUE,
+  ylim = "data",
+  external = dk.crp,
+  mapping = rank.full$Original
+)
+invisible(dev.off())
+
+grid::grid.newpage()
+spaghettiPlot(new.crp,
+  models.crp.ma,
+  G = 8,
+  log = TRUE,
+  tmax = 6.25,
+  sizes = TRUE,
+  knots = FALSE,
+  var.time = "crp_time",
+  clusters = TRUE,
+  ylim = "data",
+  external = dk.crp,
   mapping = rank.full$Original
 )
 ```
